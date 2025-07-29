@@ -1,0 +1,35 @@
+package ru.nonamejack.audioshop.repository.util;
+
+import ru.nonamejack.audioshop.dto.request.AttributeValueFilter;
+import ru.nonamejack.audioshop.model.FilterType;
+import ru.nonamejack.audioshop.model.Product;
+import ru.nonamejack.audioshop.model.ProductAttribute;
+import ru.nonamejack.audioshop.model.ValueType;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
+
+@Component
+public class BooleanListSpecificationStrategy implements AttributeFilterSpecificationStrategy{
+    @Override
+    public boolean supports(AttributeValueFilter filter) {
+        return filter.getFilterType() == FilterType.BOOLEAN
+                && filter.getValueType() == ValueType.BOOLEAN
+                && filter.getBooleanValues() != null
+                && !filter.getBooleanValues().isEmpty();
+    }
+    @Override
+    public Specification<Product> toSpecification(AttributeValueFilter filter) {
+        return (root, query, cb) -> {
+            Join<Product, ProductAttribute> join =
+                    root.join("productAttributeList", JoinType.INNER);
+            Predicate byId = cb.equal(
+                    join.get("attribute").get("attributeId"),
+                    filter.getAttributeId()
+            );
+            return cb.and(byId, join.get("booleanValue").in(filter.getBooleanValues()));
+        };
+    }
+}
